@@ -1,4 +1,8 @@
 from stable_baselines3 import PPO
+from trading_env import TradingEnv  # Import the trading environment
+
+# Initialize the environment
+env = TradingEnv() 
 
 model = PPO(
     "MlpPolicy",
