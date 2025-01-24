@@ -22,10 +22,7 @@ model = MaskablePPO(
     clip_range=0.2,
     policy_kwargs={
         "net_arch": [512, 256],  # Add this to match your transformer dimensions
-        "activation_fn": nn.ReLU,
-        "action_dist_kwargs": {
-            "action_dims": [3] * len(env.tickers)  # Match MultiDiscrete structure
-        }
+        "activation_fn": nn.ReLU
     },
     vf_coef=0.5,
     max_grad_norm=0.5
