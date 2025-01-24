@@ -8,12 +8,9 @@ class DecisionTransformer(nn.Module):
             nn.TransformerEncoderLayer(d_model=512, nhead=16, batch_first=True),
             num_layers=8
         )
-        self.head = nn.Sequential(
-            nn.Linear(512, 3),
-            nn.Softmax(dim=-1)  # Constrained outputs
-        )
+        self.head = nn.Linear(512, 3 * len(self.tickers))  # 3 actions per stock
 
     def forward(self, x):
-        x = self.embedding(x)  # (batch, 30, 17) -> (batch, 30, 512)
+        x = self.embedding(x)  # (batch, seq_len, features)
         x = self.transformer(x)
-        return self.head(x[:, -1])  # Last timestep output
+        return self.head(x[:, -1])  # Output raw logits for all actions
