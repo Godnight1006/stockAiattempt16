@@ -1,3 +1,4 @@
+import numpy as np
 from sb3_contrib import MaskablePPO
 from sb3_contrib.common.wrappers import ActionMasker
 from trading_env import TradingEnv  # Import the trading environment
