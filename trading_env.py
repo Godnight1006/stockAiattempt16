@@ -19,7 +19,7 @@ class TradingEnv(gym.Env):
         self.end_date = datetime.now().strftime('%Y-%m-%d')
         
         # Define action and observation spaces
-        self.action_space = spaces.Discrete(3)  # Buy, Hold, Sell
+        self.action_space = spaces.MultiDiscrete([3] * len(self.tickers))  # 3 actions per stock
         self.observation_space = spaces.Dict({
             'features': spaces.Box(low=-np.inf, high=np.inf, shape=(len(self.tickers), 30, 18)),  # Updated shape
             'balance': spaces.Box(low=0, high=np.inf, shape=(1,)),
@@ -60,8 +60,9 @@ class TradingEnv(gym.Env):
     
     def step(self, actions):
         """Execute one time step in the environment"""
-        if not isinstance(actions, (list, tuple)):
-            actions = [actions]
+        if not isinstance(actions, np.ndarray):
+            actions = np.array(actions)
+        actions = actions.astype(int)
             
         # Get and store current prices
         current_prices = np.array([data.iloc[self.current_step]['Close'] for data in self.historical_data])
@@ -110,8 +111,8 @@ class TradingEnv(gym.Env):
         return np.array([can_buy, True, can_sell])  # [Buy, Hold, Sell]
 
     def get_action_masks(self) -> np.ndarray:
-        """Get action masks for all stocks"""
-        return np.array([self.action_mask(i) for i in range(len(self.current_prices))])
+        """Get flattened action masks for all stocks"""
+        return np.concatenate([self.action_mask(i) for i in range(len(self.current_prices))])
 
     def execute_trade(self, action, stock_idx):
         price = self.current_prices[stock_idx]
