@@ -60,10 +60,22 @@ class TradingEnv(gym.Env):
         # Info dictionary
         info = {
             'portfolio_value': portfolio_value,
-            'positions': self.holdings
+            'positions': self.holdings,
+            'action_masks': self.get_action_masks()  # Add action masks
         }
         
-        return observation, reward, done, done, info  # Add extra terminated/truncated
+        return observation, reward, False, False, info  # (obs, reward, terminated, truncated, info)
+
+    def action_mask(self, stock_idx: int) -> np.ndarray:
+        """Generate action mask for a specific stock"""
+        price = self.current_prices[stock_idx]
+        can_buy = self.balance >= price and price > 0
+        can_sell = self.holdings[stock_idx] > 0
+        return np.array([can_buy, True, can_sell])  # [Buy, Hold, Sell]
+
+    def get_action_masks(self) -> np.ndarray:
+        """Get action masks for all stocks"""
+        return np.array([self.action_mask(i) for i in range(len(self.current_prices))])
 
     def execute_trade(self, action, stock_idx):
         price = self.current_prices[stock_idx]

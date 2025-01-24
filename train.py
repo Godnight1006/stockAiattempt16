@@ -1,10 +1,10 @@
-from stable_baselines3 import PPO
+from sb3_contrib import MaskablePPO
 from trading_env import TradingEnv  # Import the trading environment
 
 # Initialize the environment
 env = TradingEnv() 
 
-model = PPO(
+model = MaskablePPO(
     "MlpPolicy",
     env,
     learning_rate=3e-4,
