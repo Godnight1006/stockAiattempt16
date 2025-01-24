@@ -1,20 +1,34 @@
-class TradingEnv:
+import gymnasium as gym
+from gymnasium import spaces
+import numpy as np
+
+class TradingEnv(gym.Env):
     def __init__(self):
+        super().__init__()
         self.balance = 1000000  # Initial balance
         self.holdings = None
         self.current_prices = None
-        # Add other necessary initialization
+        
+        # Define action and observation spaces
+        self.action_space = spaces.Discrete(3)  # Buy, Hold, Sell
+        self.observation_space = spaces.Dict({
+            'balance': spaces.Box(low=0, high=np.inf, shape=(1,)),
+            'holdings': spaces.Box(low=0, high=np.inf, shape=(1,)),
+            'prices': spaces.Box(low=0, high=np.inf, shape=(1,))
+        })
     
-    def reset(self):
+    def reset(self, seed=None, options=None):
         """Reset the environment to initial state"""
+        super().reset(seed=seed)
         self.balance = 1000000
         self.holdings = [0] * len(self.current_prices) if self.current_prices else None
         # Return initial observation (placeholder)
-        return {
+        observation = {
             'balance': self.balance,
             'holdings': self.holdings,
             'prices': self.current_prices
         }
+        return observation, {}  # Add empty info dict
     
     def step(self, actions):
         """Execute one time step in the environment"""
@@ -49,7 +63,7 @@ class TradingEnv:
             'positions': self.holdings
         }
         
-        return observation, reward, done, info
+        return observation, reward, done, done, info  # Add extra terminated/truncated
 
     def execute_trade(self, action, stock_idx):
         price = self.current_prices[stock_idx]
