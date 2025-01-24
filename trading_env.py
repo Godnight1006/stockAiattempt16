@@ -6,11 +6,49 @@ class TradingEnv:
         # Add other necessary initialization
     
     def reset(self):
-        # Add reset logic
-        return observation
+        """Reset the environment to initial state"""
+        self.balance = 1000000
+        self.holdings = [0] * len(self.current_prices) if self.current_prices else None
+        # Return initial observation (placeholder)
+        return {
+            'balance': self.balance,
+            'holdings': self.holdings,
+            'prices': self.current_prices
+        }
     
     def step(self, actions):
-        # Add step logic
+        """Execute one time step in the environment"""
+        if not isinstance(actions, (list, tuple)):
+            actions = [actions]
+            
+        # Execute trades for each action
+        for i, action in enumerate(actions):
+            self.execute_trade(action, i)
+            
+        # Calculate portfolio value
+        portfolio_value = self.balance + sum(
+            h * p for h, p in zip(self.holdings, self.current_prices)
+        )
+        
+        # Calculate reward (placeholder: portfolio return)
+        reward = portfolio_value - 1000000  # Simple profit-based reward
+        
+        # Create observation
+        observation = {
+            'balance': self.balance,
+            'holdings': self.holdings,
+            'prices': self.current_prices
+        }
+        
+        # Done is always False for continuous trading
+        done = False
+        
+        # Info dictionary
+        info = {
+            'portfolio_value': portfolio_value,
+            'positions': self.holdings
+        }
+        
         return observation, reward, done, info
 
     def execute_trade(self, action, stock_idx):
