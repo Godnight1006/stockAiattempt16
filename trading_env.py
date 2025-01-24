@@ -6,17 +6,18 @@ from datetime import datetime, timedelta
 from feature_engineering import add_technical_indicators
 
 class TradingEnv(gym.Env):
-    def __init__(self, tickers=['AAPL', 'MSFT', 'GOOG']):
+    def __init__(self, tickers=['AAPL', 'MSFT', 'GOOG'], initial_balance=1_000_000, start_date=None, end_date=None):
         super().__init__()
         self.tickers = tickers
-        self.balance = 1_000_000
+        self.initial_balance = initial_balance
+        self.balance = initial_balance
         self.holdings = None
         self.historical_data = None
         self.current_step = 0
         
-        # Load 5 years of historical data
-        self.start_date = (datetime.now() - timedelta(days=5*365)).strftime('%Y-%m-%d')
-        self.end_date = datetime.now().strftime('%Y-%m-%d')
+        # Load historical data
+        self.start_date = start_date or (datetime.now() - timedelta(days=5*365)).strftime('%Y-%m-%d')
+        self.end_date = end_date or datetime.now().strftime('%Y-%m-%d')
         
         # Define action and observation spaces
         self.action_space = spaces.MultiDiscrete([3] * len(self.tickers))  # 3 actions per stock
@@ -34,7 +35,7 @@ class TradingEnv(gym.Env):
         processed_data = [add_technical_indicators(raw_data[ticker]) for ticker in self.tickers]
         self.historical_data = processed_data
         self.current_step = 30  # Start after 30 days to have enough history
-        self.balance = 1_000_000
+        self.balance = self.initial_balance
         self.holdings = np.zeros(len(self.tickers))
         self.current_prices = np.array([data.iloc[self.current_step]['Close'] for data in self.historical_data])  # Initialize prices
         return self._get_observation(), {}

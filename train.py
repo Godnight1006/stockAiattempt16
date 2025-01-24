@@ -9,6 +9,7 @@ env = ActionMasker(env, action_mask_fn=lambda env: env.get_action_masks())
 
 from torch import nn
 from stable_baselines3.common.callbacks import ProgressBarCallback
+from matplotlib import pyplot as plt
 
 model = MaskablePPO(
     "MultiInputPolicy",  # Changed from MlpPolicy
@@ -36,3 +37,36 @@ model.learn(
 
 # Save the trained model
 model.save("ppo_trading_agent")
+
+# Validation simulation --------------------------------------------------------
+print("\nStarting validation...")
+validation_env = TradingEnv(
+    tickers=['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMZN'],
+    initial_balance=100_000,  # New initial balance
+    start_date='2024-01-01',  # Fixed dates
+    end_date='2024-12-31'
+)
+validation_env = ActionMasker(validation_env, action_mask_fn=lambda env: env.get_action_masks())
+
+obs, _ = validation_env.reset()
+done = False
+portfolio_values = []
+
+while not done:
+    action_masks = validation_env.get_action_masks()
+    action, _ = model.predict(obs, action_masks=action_masks)
+    obs, reward, terminated, truncated, info = validation_env.step(action)
+    done = terminated or truncated
+    portfolio_values.append(info['portfolio_value'])
+    print(f"Step {len(portfolio_values)}: Portfolio Value ${info['portfolio_value']:.2f}")
+
+if portfolio_values:
+    print(f"\nFinal Portfolio Value: ${portfolio_values[-1]:.2f}")
+    plt.figure(figsize=(10,6))
+    plt.plot(portfolio_values)
+    plt.title("2024 Validation Performance")
+    plt.ylabel("Portfolio Value ($)")
+    plt.xlabel("Trading Day")
+    plt.show()
+else:
+    print("Validation failed - no steps completed")
