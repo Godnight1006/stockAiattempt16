@@ -11,32 +11,76 @@ env = TradingEnv(
 )
 env = ActionMasker(env, action_mask_fn=lambda env: env.unwrapped.get_action_masks())
 
+# Create validation env for early stopping
+val_env = TradingEnv(
+    tickers=['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMZN'],
+    initial_balance=100_000,
+    start_date='2024-01-01',
+    end_date='2024-12-31'
+)
+val_env = ActionMasker(val_env, action_mask_fn=lambda env: env.unwrapped.get_action_masks())
+
 from torch import nn
-from stable_baselines3.common.callbacks import ProgressBarCallback
+from stable_baselines3.common.callbacks import BaseCallback, ProgressBarCallback
 from matplotlib import pyplot as plt
+import numpy as np
+
+class EarlyStoppingCallback(BaseCallback):
+    def __init__(self, eval_env, patience=5, eval_freq=50_000):
+        super().__init__()
+        self.eval_env = eval_env
+        self.patience = patience
+        self.eval_freq = eval_freq
+        self.best_value = -np.inf
+        self.wait_count = 0
+
+    def _on_step(self) -> bool:
+        if self.n_calls % self.eval_freq == 0:
+            current_value = self.evaluate_model()
+            if current_value > self.best_value:
+                self.best_value = current_value
+                self.wait_count = 0
+            else:
+                self.wait_count += 1
+                if self.wait_count >= self.patience:
+                    print(f"\nEarly stopping at {self.n_calls} timesteps")
+                    return False
+        return True
+
+    def evaluate_model(self):
+        obs, _ = self.eval_env.reset()
+        done = False
+        final_value = None
+        while not done:
+            action_masks = self.eval_env.unwrapped.get_action_masks()
+            action, _ = self.model.predict(obs, action_masks=action_masks)
+            obs, _, done, _, info = self.eval_env.step(action)
+            final_value = info['portfolio_value']
+        return final_value
 
 model = MaskablePPO(
-    "MultiInputPolicy",  # Changed from MlpPolicy
+    "MultiInputPolicy",
     env,
     learning_rate=3e-4,
-    n_steps=256,  # Reduced from 2048
-    batch_size=64,  # Keep same but now relative to n_steps
-    n_epochs=1,  # Reduced from 10
+    n_steps=2048,  # Restore original
+    batch_size=64,
+    n_epochs=10,  # Restore original
     gamma=0.99,
     gae_lambda=0.95,
     clip_range=0.2,
     policy_kwargs={
-        "net_arch": [512, 256],  # Add this to match your transformer dimensions
+        "net_arch": [512, 256],
         "activation_fn": nn.ReLU
     },
     vf_coef=0.5,
     max_grad_norm=0.5
 )
 
-# Start training with progress bar
+# Start training with progress bar and early stopping
 model.learn(
-    total_timesteps=5000,  # Reduced from 1,000,000
-    callback=ProgressBarCallback()
+    total_timesteps=1_000_000,  # Restore original
+    callback=[ProgressBarCallback(), EarlyStoppingCallback(val_env)],
+    reset_num_timesteps=False
 )
 
 # Save the trained model
