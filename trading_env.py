@@ -42,12 +42,19 @@ class TradingEnv(gym.Env):
         """Get 30-day window of features ending at current_step"""
         window_data = []
         for i in range(len(self.tickers)):
-            features = self.historical_data[i].iloc[self.current_step-29:self.current_step+1]
-            window_data.append(features[['RSI','MACD','Volatility_5','Momentum_5','MA_20']].values)  # Select key features
+            features = self.historical_data[i].iloc[self.current_step-29:self.current_step+1][[
+                'Norm_Close', 'Return_1', 'Return_5', 'Return_20',
+                'RSI', 'MACD', 'Signal', 
+                'Volatility_5', 'Volatility_20', 'Vol_Ratio',
+                'Momentum_5', 'Momentum_20', 'Momentum_Ratio',
+                'MA_20', 'MA_50', 'MA_200',
+                'MA_20_50_Cross', 'MA_50_200_Cross'
+            ]].values
+            window_data.append(features)
         return {
-            'features': np.array(window_data),
-            'balance': np.array([self.balance]),
-            'holdings': self.holdings.copy()
+            'features': np.array(window_data, dtype=np.float32),
+            'balance': np.array([self.balance], dtype=np.float32),
+            'holdings': self.holdings.copy().astype(np.float32)
         }
     
     def step(self, actions):
@@ -55,12 +62,15 @@ class TradingEnv(gym.Env):
         if not isinstance(actions, (list, tuple)):
             actions = [actions]
             
+        # Get and store current prices
+        current_prices = np.array([data.iloc[self.current_step]['Close'] for data in self.historical_data])
+        self.current_prices = current_prices
+            
         # Execute trades for each action
         for i, action in enumerate(actions):
             self.execute_trade(action, i)
             
         # Calculate portfolio value
-        current_prices = np.array([data.iloc[self.current_step]['Close'] for data in self.historical_data])
         portfolio_value = self.balance + sum(
             h * p for h, p in zip(self.holdings, current_prices)
         )
