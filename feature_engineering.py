@@ -44,4 +44,20 @@ def add_technical_indicators(df):
     df['MA_20_50_Cross'] = (df['MA_20'] > df['MA_50']).astype(int)
     df['MA_50_200_Cross'] = (df['MA_50'] > df['MA_200']).astype(int)
     
-    return df.dropna()
+    # Clean problematic values
+    # 1. Handle infinite values
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    
+    # 2. Forward fill then backward fill missing values
+    df.ffill(inplace=True)
+    df.bfill(inplace=True)
+    
+    # 3. Rolling window cleanup for remaining NaNs
+    cols_to_clean = ['Vol_Ratio', 'Momentum_Ratio', 'RSI', 'MACD', 'Signal']
+    for col in cols_to_clean:
+        df[col] = df[col].rolling(3, min_periods=1, center=True).mean()
+    
+    # Final cleanup for any remaining NaNs
+    df.dropna(inplace=True)
+    
+    return df
