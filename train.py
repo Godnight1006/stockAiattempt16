@@ -26,8 +26,7 @@ model = MaskablePPO(
 # Start training with progress bar
 model.learn(
     total_timesteps=1_000_000,
-    callback=ProgressBarCallback(),
-    progress_bar=True
+    callback=ProgressBarCallback()
 )
 
 # Save the trained model
