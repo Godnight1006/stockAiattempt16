@@ -1,3 +1,5 @@
+import numpy as np
+
 def add_technical_indicators(df):
     # Create a copy to avoid SettingWithCopyWarning
     df = df.copy()
