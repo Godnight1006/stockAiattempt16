@@ -4,6 +4,7 @@ from trading_env import TradingEnv  # Import the trading environment
 
 # Initialize the environment with action masking
 env = TradingEnv()
+env.current_prices = np.random.rand(3) * 100 + 50  # Example prices between 50-150 for 3 stocks
 env = ActionMasker(env, action_mask_fn=lambda env: env.get_action_masks())
 
 from torch import nn

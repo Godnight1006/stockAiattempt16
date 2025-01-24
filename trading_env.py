@@ -21,14 +21,15 @@ class TradingEnv(gym.Env):
         """Reset the environment to initial state"""
         super().reset(seed=seed)
         self.balance = 1000000
-        self.holdings = [0] * len(self.current_prices) if self.current_prices else None
-        # Return initial observation (placeholder)
-        observation = {
-            'balance': self.balance,
-            'holdings': self.holdings,
-            'prices': self.current_prices
-        }
-        return observation, {}  # Add empty info dict
+        # Initialize with dummy prices if None (replace with actual data loading)
+        if self.current_prices is None:
+            self.current_prices = np.ones(3)  # Example for 3 stocks
+        self.holdings = [0] * len(self.current_prices)
+        return {
+            'balance': np.array([self.balance]),
+            'holdings': np.array(self.holdings),
+            'prices': np.array(self.current_prices)
+        }, {}
     
     def step(self, actions):
         """Execute one time step in the environment"""
