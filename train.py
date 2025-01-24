@@ -5,6 +5,7 @@ from trading_env import TradingEnv  # Import the trading environment
 env = TradingEnv() 
 
 from torch import nn
+from stable_baselines3.common.callbacks import ProgressBarCallback
 
 model = MaskablePPO(
     "MultiInputPolicy",  # Changed from MlpPolicy
@@ -21,3 +22,13 @@ model = MaskablePPO(
         "activation_fn": nn.ReLU
     }
 )
+
+# Start training with progress bar
+model.learn(
+    total_timesteps=1_000_000,
+    callback=ProgressBarCallback(),
+    progress_bar=True
+)
+
+# Save the trained model
+model.save("ppo_trading_agent")
