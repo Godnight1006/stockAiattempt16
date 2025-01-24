@@ -14,9 +14,9 @@ model = MaskablePPO(
     "MultiInputPolicy",  # Changed from MlpPolicy
     env,
     learning_rate=3e-4,
-    n_steps=2048,
-    batch_size=64,
-    n_epochs=10,
+    n_steps=256,  # Reduced from 2048
+    batch_size=64,  # Keep same but now relative to n_steps
+    n_epochs=1,  # Reduced from 10
     gamma=0.99,
     gae_lambda=0.95,
     clip_range=0.2,
@@ -30,7 +30,7 @@ model = MaskablePPO(
 
 # Start training with progress bar
 model.learn(
-    total_timesteps=1_000_000,
+    total_timesteps=5000,  # Reduced from 1,000,000
     callback=ProgressBarCallback()
 )
 
