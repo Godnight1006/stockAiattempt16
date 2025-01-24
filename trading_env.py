@@ -21,9 +21,9 @@ class TradingEnv(gym.Env):
         # Define action and observation spaces
         self.action_space = spaces.Discrete(3)  # Buy, Hold, Sell
         self.observation_space = spaces.Dict({
-            'features': spaces.Box(low=-np.inf, high=np.inf, shape=(30, 17)),  # 30-day window of 17 features
+            'features': spaces.Box(low=-np.inf, high=np.inf, shape=(len(self.tickers), 30, 18)),  # Updated shape
             'balance': spaces.Box(low=0, high=np.inf, shape=(1,)),
-            'holdings': spaces.Box(low=0, high=np.inf, shape=(len(tickers),))
+            'holdings': spaces.Box(low=0, high=np.inf, shape=(len(self.tickers),))
         })
     
     def reset(self, seed=None, options=None):

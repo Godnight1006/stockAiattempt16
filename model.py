@@ -3,7 +3,7 @@ import torch.nn as nn
 class DecisionTransformer(nn.Module):
     def __init__(self):
         super().__init__()
-        self.embedding = nn.Linear(17, 512)
+        self.embedding = nn.Linear(18, 512)  # Changed from 17 to 18
         self.transformer = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(d_model=512, nhead=16, batch_first=True),
             num_layers=8
