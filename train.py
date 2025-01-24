@@ -1,8 +1,10 @@
 from sb3_contrib import MaskablePPO
+from sb3_contrib.common.wrappers import ActionMasker
 from trading_env import TradingEnv  # Import the trading environment
 
-# Initialize the environment
-env = TradingEnv() 
+# Initialize the environment with action masking
+env = TradingEnv()
+env = ActionMasker(env, action_mask_fn=lambda env: env.get_action_masks())
 
 from torch import nn
 from stable_baselines3.common.callbacks import ProgressBarCallback
