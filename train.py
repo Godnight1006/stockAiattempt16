@@ -4,8 +4,12 @@ from sb3_contrib.common.wrappers import ActionMasker
 from trading_env import TradingEnv  # Import the trading environment
 
 # Initialize the environment with action masking
-env = TradingEnv(tickers=['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMZN'])  # Example stocks
-env = ActionMasker(env, action_mask_fn=lambda env: env.get_action_masks())
+env = TradingEnv(
+    tickers=['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMZN'],
+    start_date='2018-01-01',
+    end_date='2023-12-31'
+)
+env = ActionMasker(env, action_mask_fn=lambda env: env.unwrapped.get_action_masks())
 
 from torch import nn
 from stable_baselines3.common.callbacks import ProgressBarCallback
@@ -46,14 +50,14 @@ validation_env = TradingEnv(
     start_date='2024-01-01',  # Fixed dates
     end_date='2024-12-31'
 )
-validation_env = ActionMasker(validation_env, action_mask_fn=lambda env: env.get_action_masks())
+validation_env = ActionMasker(validation_env, action_mask_fn=lambda env: env.unwrapped.get_action_masks())
 
 obs, _ = validation_env.reset()
 done = False
 portfolio_values = []
 
 while not done:
-    action_masks = validation_env.get_action_masks()
+    action_masks = validation_env.unwrapped.get_action_masks()
     action, _ = model.predict(obs, action_masks=action_masks)
     obs, reward, terminated, truncated, info = validation_env.step(action)
     done = terminated or truncated
