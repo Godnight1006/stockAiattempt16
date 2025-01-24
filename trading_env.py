@@ -36,6 +36,7 @@ class TradingEnv(gym.Env):
         self.current_step = 30  # Start after 30 days to have enough history
         self.balance = 1_000_000
         self.holdings = np.zeros(len(self.tickers))
+        self.current_prices = np.array([data.iloc[self.current_step]['Close'] for data in self.historical_data])  # Initialize prices
         return self._get_observation(), {}
 
     def _get_observation(self):
@@ -64,7 +65,10 @@ class TradingEnv(gym.Env):
             
         # Get and store current prices
         current_prices = np.array([data.iloc[self.current_step]['Close'] for data in self.historical_data])
-        self.current_prices = current_prices
+        if not done:
+            self.current_prices = current_prices  # Keep existing assignment but wrap in condition
+        else:
+            self.current_prices = np.zeros(len(self.tickers))  # Add safety for terminal state
             
         # Execute trades for each action
         for i, action in enumerate(actions):
