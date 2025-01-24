@@ -65,6 +65,8 @@ class TradingEnv(gym.Env):
             
         # Get and store current prices
         current_prices = np.array([data.iloc[self.current_step]['Close'] for data in self.historical_data])
+        # Check if we're at the end of the data
+        done = self.current_step >= len(self.historical_data[0]) - 1
         if not done:
             self.current_prices = current_prices  # Keep existing assignment but wrap in condition
         else:
