@@ -1,35 +1,54 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
+import yfinance as yf
+from datetime import datetime, timedelta
+from feature_engineering import add_technical_indicators
 
 class TradingEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, tickers=['AAPL', 'MSFT', 'GOOG']):
         super().__init__()
-        self.balance = 1000000  # Initial balance
+        self.tickers = tickers
+        self.balance = 1_000_000
         self.holdings = None
-        self.current_prices = None
+        self.historical_data = None
+        self.current_step = 0
+        
+        # Load 5 years of historical data
+        self.start_date = (datetime.now() - timedelta(days=5*365)).strftime('%Y-%m-%d')
+        self.end_date = datetime.now().strftime('%Y-%m-%d')
         
         # Define action and observation spaces
         self.action_space = spaces.Discrete(3)  # Buy, Hold, Sell
         self.observation_space = spaces.Dict({
+            'features': spaces.Box(low=-np.inf, high=np.inf, shape=(30, 17)),  # 30-day window of 17 features
             'balance': spaces.Box(low=0, high=np.inf, shape=(1,)),
-            'holdings': spaces.Box(low=0, high=np.inf, shape=(1,)),
-            'prices': spaces.Box(low=0, high=np.inf, shape=(1,))
+            'holdings': spaces.Box(low=0, high=np.inf, shape=(len(tickers),))
         })
     
     def reset(self, seed=None, options=None):
         """Reset the environment to initial state"""
         super().reset(seed=seed)
-        self.balance = 1000000
-        # Initialize with dummy prices if None (replace with actual data loading)
-        if self.current_prices is None:
-            self.current_prices = np.ones(3)  # Example for 3 stocks
-        self.holdings = [0] * len(self.current_prices)
+        # Download and process data
+        raw_data = yf.download(self.tickers, start=self.start_date, end=self.end_date, group_by='ticker')
+        processed_data = [add_technical_indicators(raw_data[ticker]) for ticker in self.tickers]
+        self.historical_data = processed_data
+        self.current_step = 30  # Start after 30 days to have enough history
+        self.balance = 1_000_000
+        self.holdings = np.zeros(len(self.tickers))
+        return self._get_observation(), {}
+
+    def _get_observation(self):
+        """Get 30-day window of features ending at current_step"""
+        window_data = []
+        for i in range(len(self.tickers)):
+            features = self.historical_data[i].iloc[self.current_step-29:self.current_step+1]
+            window_data.append(features[['RSI','MACD','Volatility_5','Momentum_5','MA_20']].values)  # Select key features
         return {
+            'features': np.array(window_data),
             'balance': np.array([self.balance]),
-            'holdings': np.array(self.holdings),
-            'prices': np.array(self.current_prices)
-        }, {}
+            'holdings': self.holdings.copy()
+        }
     
     def step(self, actions):
         """Execute one time step in the environment"""
@@ -41,22 +60,22 @@ class TradingEnv(gym.Env):
             self.execute_trade(action, i)
             
         # Calculate portfolio value
+        current_prices = np.array([data.iloc[self.current_step]['Close'] for data in self.historical_data])
         portfolio_value = self.balance + sum(
-            h * p for h, p in zip(self.holdings, self.current_prices)
+            h * p for h, p in zip(self.holdings, current_prices)
         )
         
         # Calculate reward (placeholder: portfolio return)
-        reward = portfolio_value - 1000000  # Simple profit-based reward
+        reward = portfolio_value - 1_000_000  # Simple profit-based reward
         
-        # Create observation
-        observation = {
-            'balance': self.balance,
-            'holdings': self.holdings,
-            'prices': self.current_prices
-        }
+        # Advance to next time step
+        self.current_step += 1
         
-        # Done is always False for continuous trading
-        done = False
+        # Check if done
+        done = self.current_step >= len(self.historical_data[0]) - 1
+        
+        # Get new observation
+        observation = self._get_observation()
         
         # Info dictionary
         info = {
@@ -65,7 +84,7 @@ class TradingEnv(gym.Env):
             'action_masks': self.get_action_masks()  # Add action masks
         }
         
-        return observation, reward, False, False, info  # (obs, reward, terminated, truncated, info)
+        return observation, reward, done, done, info  # (obs, reward, terminated, truncated, info)
 
     def action_mask(self, stock_idx: int) -> np.ndarray:
         """Generate action mask for a specific stock"""
