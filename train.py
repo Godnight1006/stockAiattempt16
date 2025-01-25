@@ -1,8 +1,15 @@
 import numpy as np
 import torch
+import argparse
 from sb3_contrib import MaskablePPO
 from sb3_contrib.common.wrappers import ActionMasker
 from trading_env import TradingEnv  # Import the trading environment
+
+# Parse command line arguments
+parser = argparse.ArgumentParser(description='Train or validate trading agent')
+parser.add_argument('--no-training', action='store_true', 
+                    help='Skip training and run validation only')
+args = parser.parse_args()
 
 # Initialize the environment with action masking
 env = TradingEnv(
@@ -77,15 +84,19 @@ model = MaskablePPO(
     max_grad_norm=0.5
 )
 
-# Start training with progress bar and early stopping
-model.learn(
-    total_timesteps=1_000_000,  # Restore original
-    callback=[ProgressBarCallback(), EarlyStoppingCallback(val_env)],
-    reset_num_timesteps=False
-)
-
-# Save the trained model
-model.save("ppo_trading_agent")
+if not args.no_training:
+    # Start training with progress bar and early stopping
+    model.learn(
+        total_timesteps=1_000_000,
+        callback=[ProgressBarCallback(), EarlyStoppingCallback(val_env)],
+        reset_num_timesteps=False
+    )
+    
+    # Save the trained model
+    model.save("ppo_trading_agent")
+else:
+    # Load existing model if skipping training
+    model = MaskablePPO.load("ppo_trading_agent", env=env)
 
 # Validation simulation --------------------------------------------------------
 print("\nStarting validation...")
