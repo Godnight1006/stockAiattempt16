@@ -96,7 +96,7 @@ if not args.no_training:
     model.save("ppo_trading_agent")
 else:
     # Load existing model if skipping training
-    model = MaskablePPO.load("ppo_trading_agent", env=env)
+    model = MaskablePPO.load("ppo_trading_agent", env=env, device="cpu")  # Add device="cpu"
 
 # Validation simulation --------------------------------------------------------
 print("\nStarting validation...")
@@ -118,7 +118,7 @@ while not done:
     # Get action probabilities using the policy
     with torch.no_grad():
         # Convert numpy observation to tensor and add batch dimension
-        obs_tensor = {k: torch.as_tensor(v).unsqueeze(0) for k, v in obs.items()}
+        obs_tensor = {k: torch.as_tensor(v).unsqueeze(0).to(model.device) for k, v in obs.items()}  # Add .to(model.device)
         dist = model.policy.get_distribution(obs_tensor)
         logits = dist.distribution.logits[0].numpy()  # Remove batch dimension
     
