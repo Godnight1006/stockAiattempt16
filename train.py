@@ -119,8 +119,9 @@ while not done:
     with torch.no_grad():
         # Convert numpy observation to tensor and add batch dimension
         obs_tensor = {k: torch.as_tensor(v).unsqueeze(0).to(model.device) for k, v in obs.items()}
-        latent_pi, _, _ = model.policy.mlp_extractor(model.policy.forward_actor(obs_tensor))
-        logits = model.policy.action_net(latent_pi).cpu().numpy()[0]  # Get logits directly
+        features = model.policy.extract_features(obs_tensor)
+        latent_pi, _ = model.policy.mlp_extractor(features)  # Changed from forward_actor
+        logits = model.policy.action_net(latent_pi).cpu().numpy()[0]
     
     # Apply action masks and softmax
     masked_logits = np.where(action_masks, logits, -1e8)

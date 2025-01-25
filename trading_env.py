@@ -32,6 +32,17 @@ class TradingEnv(gym.Env):
         super().reset(seed=seed)
         # Download and process data
         raw_data = yf.download(self.tickers, start=self.start_date, end=self.end_date, group_by='ticker')
+        
+        # Validate available tickers
+        available_tickers = [t for t in self.tickers if t in raw_data.columns.levels[0]]
+        if len(available_tickers) != len(self.tickers):
+            print(f"Missing tickers: {set(self.tickers)-set(available_tickers)}")
+            self.tickers = available_tickers
+            # Update spaces
+            self.action_space = spaces.MultiDiscrete([3] * len(self.tickers))
+            self.observation_space['features'].shape = (len(self.tickers), 30, 18)
+            self.observation_space['holdings'].shape = (len(self.tickers),)
+            
         processed_data = []
         
         # Add data validation
@@ -136,7 +147,7 @@ class TradingEnv(gym.Env):
         # Ensure at least one action is available per stock
         for i in range(len(self.tickers)):
             if not np.any(masks[i*3:(i+1)*3]):
-                masks[i*3] = True  # Enable Hold action if all masked
+                masks[i*3 + 1] = True  # Changed from i*3 to i*3+1 to enable Hold action
         return masks
 
     def execute_trade(self, action, stock_idx):
