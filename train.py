@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from sb3_contrib import MaskablePPO
 from sb3_contrib.common.wrappers import ActionMasker
 from trading_env import TradingEnv  # Import the trading environment
@@ -104,11 +105,17 @@ while not done:
     action_masks = validation_env.unwrapped.get_action_masks()
     
     # Get action probabilities using the policy
-    action_probs = model.policy.predict_proba(obs, action_masks=action_masks)
+    with torch.no_grad():
+        dist = model.policy.get_distribution(obs)
+        logits = dist.distribution.logits.numpy()
+    
+    # Apply action masks and softmax
+    masked_logits = np.where(action_masks, logits, -1e8)
+    probs = np.exp(masked_logits) / np.exp(masked_logits).sum(axis=-1, keepdims=True)
     
     # Reshape probabilities to (n_stocks, 3)
     n_stocks = len(validation_env.unwrapped.tickers)
-    probs_reshaped = action_probs.reshape(n_stocks, 3)
+    probs_reshaped = probs.reshape(n_stocks, 3)
     
     # Format probability display
     prob_output = " | ".join(
