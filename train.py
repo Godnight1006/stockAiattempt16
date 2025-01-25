@@ -118,9 +118,9 @@ while not done:
     # Get action probabilities using the policy
     with torch.no_grad():
         # Convert numpy observation to tensor and add batch dimension
-        obs_tensor = {k: torch.as_tensor(v).unsqueeze(0).to(model.device) for k, v in obs.items()}  # Add .to(model.device)
-        dist = model.policy.get_distribution(obs_tensor)
-        logits = dist.distribution.logits[0].numpy()  # Remove batch dimension
+        obs_tensor = {k: torch.as_tensor(v).unsqueeze(0).to(model.device) for k, v in obs.items()}
+        latent_pi, _, _ = model.policy.mlp_extractor(model.policy.forward_actor(obs_tensor))
+        logits = model.policy.action_net(latent_pi).cpu().numpy()[0]  # Get logits directly
     
     # Apply action masks and softmax
     masked_logits = np.where(action_masks, logits, -1e8)

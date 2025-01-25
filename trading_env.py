@@ -132,7 +132,12 @@ class TradingEnv(gym.Env):
 
     def get_action_masks(self) -> np.ndarray:
         """Get flattened action masks for all stocks"""
-        return np.concatenate([self.action_mask(i) for i in range(len(self.current_prices))])
+        masks = np.concatenate([self.action_mask(i) for i in range(len(self.current_prices))])
+        # Ensure at least one action is available per stock
+        for i in range(len(self.tickers)):
+            if not np.any(masks[i*3:(i+1)*3]):
+                masks[i*3] = True  # Enable Hold action if all masked
+        return masks
 
     def execute_trade(self, action, stock_idx):
         price = self.current_prices[stock_idx]
