@@ -106,8 +106,10 @@ while not done:
     
     # Get action probabilities using the policy
     with torch.no_grad():
-        dist = model.policy.get_distribution(obs)
-        logits = dist.distribution.logits.numpy()
+        # Convert numpy observation to tensor and add batch dimension
+        obs_tensor = {k: torch.as_tensor(v).unsqueeze(0) for k, v in obs.items()}
+        dist = model.policy.get_distribution(obs_tensor)
+        logits = dist.distribution.logits[0].numpy()  # Remove batch dimension
     
     # Apply action masks and softmax
     masked_logits = np.where(action_masks, logits, -1e8)
