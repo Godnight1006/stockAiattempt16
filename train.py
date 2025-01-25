@@ -102,11 +102,26 @@ portfolio_values = []
 
 while not done:
     action_masks = validation_env.unwrapped.get_action_masks()
+    
+    # Get action probabilities using the policy
+    action_probs = model.policy.predict_proba(obs, action_masks=action_masks)
+    
+    # Reshape probabilities to (n_stocks, 3)
+    n_stocks = len(validation_env.unwrapped.tickers)
+    probs_reshaped = action_probs.reshape(n_stocks, 3)
+    
+    # Format probability display
+    prob_output = " | ".join(
+        [f"Stock {i}: B:{p[0]:.2f} H:{p[1]:.2f} S:{p[2]:.2f}" 
+         for i, p in enumerate(probs_reshaped)]
+    )
+    
     action, _ = model.predict(obs, action_masks=action_masks)
     obs, reward, terminated, truncated, info = validation_env.step(action)
     done = terminated or truncated
     portfolio_values.append(info['portfolio_value'])
-    print(f"Step {len(portfolio_values)}: Portfolio Value ${info['portfolio_value']:.2f}")
+    
+    print(f"Step {len(portfolio_values)}: Portfolio Value ${info['portfolio_value']:.2f} | {prob_output}")
 
 if portfolio_values:
     print(f"\nFinal Portfolio Value: ${portfolio_values[-1]:.2f}")
