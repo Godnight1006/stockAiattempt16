@@ -6,7 +6,7 @@ from trading_env import TradingEnv  # Import the trading environment
 # Initialize the environment with action masking
 env = TradingEnv(
     tickers=['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMZN'],
-    start_date='2018-01-01',
+    start_date='2000-01-01',  # Changed from 2018 to get 24 years of data
     end_date='2023-12-31'
 )
 env = ActionMasker(env, action_mask_fn=lambda env: env.unwrapped.get_action_masks())
