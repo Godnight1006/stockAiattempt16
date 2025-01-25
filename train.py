@@ -5,7 +5,7 @@ from trading_env import TradingEnv  # Import the trading environment
 
 # Initialize the environment with action masking
 env = TradingEnv(
-    tickers=['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMZN'],
+    tickers=['AAPL', 'MSFT', 'AMZN', 'IBM', 'GE'],  # Companies with data since 2000
     start_date='2000-01-01',  # Changed from 2018 to get 24 years of data
     end_date='2023-12-31'
 )
@@ -13,7 +13,7 @@ env = ActionMasker(env, action_mask_fn=lambda env: env.unwrapped.get_action_mask
 
 # Create validation env for early stopping
 val_env = TradingEnv(
-    tickers=['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMZN'],
+    tickers=['AAPL', 'MSFT', 'AMZN', 'IBM', 'GE'],  # Companies with data since 2000
     initial_balance=100_000,
     start_date='2024-01-01',
     end_date='2024-12-31'
@@ -89,7 +89,7 @@ model.save("ppo_trading_agent")
 # Validation simulation --------------------------------------------------------
 print("\nStarting validation...")
 validation_env = TradingEnv(
-    tickers=['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMZN'],
+    tickers=['AAPL', 'MSFT', 'AMZN', 'IBM', 'GE'],  # Companies with data since 2000
     initial_balance=100_000,  # New initial balance
     start_date='2024-01-01',  # Fixed dates
     end_date='2024-12-31'
