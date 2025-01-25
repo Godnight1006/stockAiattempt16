@@ -32,12 +32,31 @@ class TradingEnv(gym.Env):
         super().reset(seed=seed)
         # Download and process data
         raw_data = yf.download(self.tickers, start=self.start_date, end=self.end_date, group_by='ticker')
-        processed_data = [add_technical_indicators(raw_data[ticker]) for ticker in self.tickers]
+        processed_data = []
+        
+        # Add data validation
+        for ticker in self.tickers:
+            df = raw_data[ticker].copy()
+            df = add_technical_indicators(df)
+            # Ensure we have enough historical data
+            if len(df) < 31:
+                raise ValueError(f"Insufficient data for {ticker}. Need at least 31 days, got {len(df)}")
+            processed_data.append(df)
+        
         self.historical_data = processed_data
         self.current_step = 30  # Start after 30 days to have enough history
+        
+        # Verify all stocks have same length
+        data_lengths = [len(d) for d in self.historical_data]
+        if len(set(data_lengths)) > 1:
+            min_length = min(data_lengths)
+            print(f"Truncating data to minimum length: {min_length}")
+            self.historical_data = [d.iloc[-min_length:] for d in self.historical_data]
+            self.current_step = min(30, min_length - 1)
+        
         self.balance = self.initial_balance
         self.holdings = np.zeros(len(self.tickers))
-        self.current_prices = np.array([data.iloc[self.current_step]['Close'] for data in self.historical_data])  # Initialize prices
+        self.current_prices = np.array([data.iloc[self.current_step]['Close'] for data in self.historical_data])
         return self._get_observation(), {}
 
     def _get_observation(self):
